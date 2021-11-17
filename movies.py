@@ -219,14 +219,14 @@ def filmPopularity():
     # GROUP BY strftime('%Y', release_date)
     # ORDER BY strftime('%Y', release_date) DESC
 
-    _popularity = (
+   _popularity = (
         db.session.query(
             Movies.title,
             func.max(Movies.popularity),
-            func.extract(Movies.release_date, "year"),
+            func.strftime("%Y", Movies.release_date),
         )
-        .group_by(func.extract(Movies.release_date, "year"))
-        .order_by(desc(func.extract(Movies.release_date, "year")))
+        .group_by(func.strftime("%Y", Movies.release_date))
+        .order_by(desc(func.strftime("%Y", Movies.release_date)))
         .all()
     )
 
