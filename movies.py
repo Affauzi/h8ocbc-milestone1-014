@@ -3,12 +3,14 @@ This is the movies module and supports all the REST actions for the
 movies data
 """
 
-from flask import make_response, abort
+from flask import make_response, abort, jsonify
+from sqlalchemy.sql.expression import desc
 from config import db
 from models import Movies, MovieSchema, Director
+from sqlalchemy.sql import func
 
 
-def read_all():
+def read_all(limitation):
     """
     This function responds to a request for /api/direcor/movies
     with the complete list of movies
@@ -16,12 +18,12 @@ def read_all():
     :return:                json list of all movies
     """
     # Query the database for all the movies
-    movies = Movies.query.order_by(db.desc(Movies.id)).all()
+    movies = Movies.query.order_by(db.desc(Movies.id)).limit(limitation).all()
 
     # Serialize the list of notes from our data
     movie_schema = MovieSchema(many=True)
     data = movie_schema.dump(movies)
-    return data
+    return data, 200
 
 
 def read_one(director_id, id):
@@ -147,3 +149,95 @@ def delete(director_id, id):
     # Otherwise, nope, didn't find that movie
     else:
         abort(404, f"Movie not found for Id: {id}")
+
+
+def search(keyword):
+    """
+    This function responds to a request for /api/movies/{keyword}
+    with the complete list of movies
+
+    :return:                json list of all movies
+    """
+
+    _keyword = f"%{keyword}%"
+    # Query the database for all the movies
+    movies = Movies.query.filter(Movies.title.like(_keyword)).all()
+
+    # Serialize the list of notes from our data
+    movie_schema = MovieSchema(many=True)
+    data = movie_schema.dump(movies)
+    return data
+
+
+def rating():
+    """
+    This function responds to a request for /api/movies/rating
+    with the complete list of movies
+
+    :return:                json list of all movies
+    """
+
+    # query Rating in movies class:
+    # SELECT m.title, (m.vote_count/CAST(m.vote_average AS FLOAT))/100 as rating
+    # FROM movies m
+    # GROUP BY m.title
+    # ORDER BY rating DESC
+
+    rating = (
+        db.session.query(
+            Movies.title, (Movies.vote_count / Movies.vote_average).label("Point")
+        )
+        .group_by(Movies.title)
+        .order_by(desc(Movies.vote_count / Movies.vote_average))
+        .all()
+    )
+
+    print(rating[0][0])
+
+    json_result = []
+
+    for i in rating:
+
+        # nama = director_dict["name"] = i[0]
+        # budget = director_dict["budget"] = i[1]
+        json_result.append({"Title": i[0], "Point": i[1]})
+
+    return jsonify(json_result)
+
+
+def filmPopularity():
+    """
+    This function responds to a request for /api/movies/popularity
+    with the complete list of movies
+
+    :return:                json list of all movies
+    """
+
+    # query popularity each year in movies class:
+    # SELECT title, strftime('%Y', m2.release_date), MAX(m2.popularity)
+    # from movies m2
+    # GROUP BY strftime('%Y', release_date)
+    # ORDER BY strftime('%Y', release_date) DESC
+
+    _popularity = (
+        db.session.query(
+            Movies.title,
+            func.max(Movies.popularity),
+            func.extract(Movies.release_date, "year"),
+        )
+        .group_by(func.extract(Movies.release_date, "year"))
+        .order_by(desc(func.extract(Movies.release_date, "year")))
+        .all()
+    )
+
+    print(_popularity[0][0])
+
+    json_result = []
+
+    for i in _popularity:
+
+        # nama = director_dict["name"] = i[0]
+        # budget = director_dict["budget"] = i[1]
+        json_result.append({"Title": i[0], "Popularity": i[1], "Release Year": i[2]})
+
+    return jsonify(json_result)

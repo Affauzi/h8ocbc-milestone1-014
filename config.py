@@ -14,6 +14,9 @@ app = connex_app.app
 
 # Configure the SQLAlchemy part of the app instance
 app.config["SQLALCHEMY_ECHO"] = True
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
+#     basedir, "final_proj.db"
+# )
 app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = "postgresql://elxsgrhpxlfdrt:e11edaf4b0351f83c4bd5e352e25cf96f4fd8ab73cb7a9960e25ff8d0f5774c2@ec2-34-203-114-67.compute-1.amazonaws.com:5432/db4bh64tk54ck6"

@@ -3,12 +3,14 @@ This is the director module and supports all the REST actions for the
 director data
 """
 
-from flask import make_response, abort
+from flask import make_response, abort, jsonify
 from config import db
 from models import Director, DirectorSchema, Movies
+from sqlalchemy.orm import load_only, query
+from sqlalchemy.sql import func
 
 
-def read_all():
+def read_all(limitation):
     """
     This function responds to a request for /api/director
     with the complete lists of director
@@ -16,7 +18,7 @@ def read_all():
     :return:        json string of list of director
     """
     # Create the list of director from our data
-    director = Director.query.order_by(Director.id).all()
+    director = Director.query.order_by(Director.id).limit(limitation).all()
 
     # Serialize the data for the response
     director_schema = DirectorSchema(many=True)
@@ -132,3 +134,38 @@ def delete(id):
     # Otherwise, nope, didn't find that director
     else:
         abort(404, f"Director not found for Id: {id}")
+
+
+def film_budget():
+    """
+    This function responds to a request for /api/director
+    with the complete lists of director
+
+    :return:        json string of list of director
+    """
+
+    # query Director Budget in director class:
+    # select d.name, sum(m.budget) from movies m, directors d
+    # where m.director_id = d.id
+    # GROUP BY d.name
+    # ORDER BY sum(m.budget) DESC
+
+    director = (
+        db.session.query(Director.name, func.sum(Movies.budget).label("budget"))
+        .join(Movies)
+        .group_by(Director.name)
+        .order_by(func.sum(Movies.budget).desc())
+        .all()
+    )
+
+    print(director[0][0])
+
+    json_result = []
+
+    for i in director:
+
+        # nama = director_dict["name"] = i[0]
+        # budget = director_dict["budget"] = i[1]
+        json_result.append({"nama": i[0], "budget": i[1]})
+
+    return jsonify(json_result)

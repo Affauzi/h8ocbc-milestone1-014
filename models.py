@@ -61,6 +61,7 @@ class DirectorMovieSchema(ma.SQLAlchemyAutoSchema):
     # director_id = fields.Int()
     overview = fields.Str()
     title = fields.Str()
+    # budget = fields.Int()
 
 
 class MovieSchema(ma.SQLAlchemyAutoSchema):
